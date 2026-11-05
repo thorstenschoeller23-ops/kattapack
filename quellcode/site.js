@@ -274,7 +274,7 @@
      Nicht bei „Bewegung reduzieren“. Ohne Skript, beim Drucken und bei Tastaturfokus ist alles sofort da. */
   (function(){
     var foot = document.querySelector('.site-footer');
-    if (!foot || !window.requestAnimationFrame || !hasIO || reduced()) return;
+    if (!foot || !window.requestAnimationFrame || reduced()) return;
     var ARROW = '<svg viewBox="0 0 16 20" aria-hidden="true" focusable="false"><path d="M1.5 1.5v15.2l4.1-3.9 2.7 6.1 2.6-1.1-2.7-6h5.6Z"/></svg>';
     var list = [];
     var add = function(el, kind){ if (el) list.push({ el: el, kind: kind || 'box' }); };
@@ -367,8 +367,8 @@
       if (--left === 0) finishLayer();
     };
     var finishLayer = function(){
-      io.disconnect();
-      window.removeEventListener('scroll', atEnd);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
       foot.classList.remove('building');
       setTimeout(function(){ if (layer.parentNode) layer.parentNode.removeChild(layer); }, 600);
     };
@@ -379,28 +379,26 @@
       it.t0 = performance.now() + delay;
       if (!raf) raf = requestAnimationFrame(frame);
     };
-    // Was ins Bild kommt, wird gebaut. Was gleichzeitig kommt, startet leicht versetzt: so arbeitet das ganze Team auf einmal.
-    var batch = 0, batchAt = 0;
-    var io = new IntersectionObserver(function(entries){
-      var now = performance.now();
-      if (now - batchAt > 250){ batch = 0; batchAt = now; }
-      entries.forEach(function(en){
-        if (!en.isIntersecting) return;
-        var it = en.target.__build;
-        if (it){ start(it, Math.min(batch, 14) * 85); batch++; }
-        io.unobserve(en.target);
+    // Was ins Bild kommt, wird gebaut. Geprüft wird die Position selbst (nicht per IntersectionObserver):
+    // Safari am iPhone hält die noch zugeschnittenen Elemente sonst für unsichtbar und startet erst ganz unten.
+    // Was gleichzeitig ins Bild kommt, startet leicht versetzt: so arbeiten viele Cursor auf einmal.
+    var ticking = false;
+    var check = function(){
+      ticking = false;
+      if (left === 0) return;
+      var vh = window.innerHeight || root.clientHeight, k = 0;
+      var end = vh + window.scrollY >= root.scrollHeight - 4;   // am Seitenende: alles, was noch fehlt
+      items.forEach(function(it){
+        if (it.state !== 0) return;
+        var r = it.el.getBoundingClientRect();
+        if (end || (r.top < vh - 4 && r.bottom > 0)) start(it, Math.min(k++, 14) * 85);
       });
-    }, {threshold: .01});
-    // Sicherung: Am Seitenende wird alles gebaut, was noch fehlt (ganz unten Liegendes kommt sonst nie weiter ins Bild)
-    var atEnd = function(){
-      if (left === 0){ window.removeEventListener('scroll', atEnd); return; }
-      if (window.innerHeight + window.scrollY >= root.scrollHeight - 4){
-        var k = 0;
-        items.forEach(function(it){ if (it.state === 0){ io.unobserve(it.el); start(it, Math.min(k++, 14) * 85); } });
-      }
     };
-    window.addEventListener('scroll', atEnd, {passive: true});
-    items.forEach(function(it){ it.el.__build = it; io.observe(it.el); });
+    var onScroll = function(){ if (!ticking){ ticking = true; requestAnimationFrame(check); } };
+    window.addEventListener('scroll', onScroll, {passive: true});
+    window.addEventListener('resize', onScroll);
+    window.addEventListener('load', onScroll);
+    check();
     // Sofort alles zeigen: Tastatur im Footer, Drucken
     var finishAll = function(){ items.forEach(done); };
     foot.addEventListener('focusin', finishAll);
