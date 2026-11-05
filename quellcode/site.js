@@ -265,6 +265,127 @@
     });
   })();
 
+  /* ---------- Schwarm-Cursor im Abschlussblock ----------
+     Fährt die Maus in den Block „Erzählen Sie uns von Ihrem Shop“, kommt das Team dazu:
+     sechs Cursor folgen dem Mauszeiger. Zeigt man auf „Angebot anfragen“, versammeln sie sich am Button.
+     Nur mit Maus, nicht bei „Bewegung reduzieren“. Reine Dekoration: für Screenreader ausgeblendet,
+     nicht anklickbar. Gerechnet wird nur, solange sich etwas bewegt. */
+  (function(){
+    var cta = document.querySelector('.cta');
+    if (!cta || !window.requestAnimationFrame) return;
+    var btn = cta.querySelector('.btn');
+    var NAMES = ['Wareneingang', 'Lager', 'Packtisch', 'Versand', 'Retouren', 'Ihr Kontakt'];
+    // Formation: links und unterhalb des Mauszeigers, damit der Text an der Maus frei bleibt
+    var FORM = [[-128, -34], [-158, 14], [-118, 62], [-52, 98], [30, 54], [70, 118]];
+    var ARROW = '<svg viewBox="0 0 16 20" aria-hidden="true" focusable="false"><path d="M1.5 1.5v15.2l4.1-3.9 2.7 6.1 2.6-1.1-2.7-6h5.6Z"/></svg>';
+    var layer = null, agents = [], raf = null, mode = 'off', cx = 0, cy = 0, last = 0, rect = null, bRect = null, hideTimer = null;
+
+    var build = function(){
+      layer = document.createElement('div');
+      layer.className = 'swarm';
+      layer.setAttribute('aria-hidden', 'true');
+      NAMES.forEach(function(name, i){
+        var el = document.createElement('span');
+        el.className = 'swarm-cur c' + (i % 3);
+        el.innerHTML = ARROW + '<b>' + name + '</b>';
+        layer.appendChild(el);
+        // Jeder Cursor hat seinen Platz im Schwarm rund um den Mauszeiger und ein eigenes Tempo
+        agents.push({ el: el, x: 0, y: 0, vx: 0, vy: 0, ox: FORM[i][0], oy: FORM[i][1], w: 90,
+                      k: 0.022 + (i % 3) * 0.009, ph: i * 1.7 });
+      });
+      cta.appendChild(layer);
+      agents.forEach(function(a){ a.w = a.el.offsetWidth || 90; });
+    };
+    var measure = function(){
+      rect = cta.getBoundingClientRect();
+      bRect = btn ? btn.getBoundingClientRect() : null;
+    };
+    // Sammelpunkte rund um den Button (relativ zum Block)
+    var gather = function(i){
+      var b = bRect, r = rect, n = agents.length;
+      var t = (i + .5) / n, cx = b.left - r.left, cy = b.top - r.top, w = b.width, h = b.height;
+      var per = 2 * (w + h), d = t * per;
+      if (d < w) return [cx + d, cy - 14];
+      d -= w; if (d < h) return [cx + w + 12, cy + d];
+      d -= h; if (d < w) return [cx + w - d, cy + h + 12];
+      d -= w; return [cx - 14, cy + h - d];
+    };
+    var step = function(ts){
+      raf = null;
+      var dt = last ? Math.min(32, ts - last) / 16.7 : 1;
+      last = ts;
+      var moving = false, onBtn = mode === 'button' && bRect;
+      var px = cx - rect.left, py = cy - rect.top;
+      for (var i = 0; i < agents.length; i++){
+        var a = agents[i], tx, ty;
+        if (onBtn){ var g = gather(i); tx = g[0]; ty = g[1]; }
+        else {
+          // leichtes Eigenleben, damit der Schwarm nicht starr wirkt
+          var w = ts / 900 + a.ph;
+          tx = px + a.ox + Math.sin(w) * 9; ty = py + a.oy + Math.cos(w * 1.3) * 7;
+        }
+        var k = onBtn ? 0.06 : a.k;
+        a.vx += (tx - a.x) * k * dt; a.vy += (ty - a.y) * k * dt;
+        // Abstand halten, damit die Namensschilder nicht übereinanderliegen (nach ihrer echten Breite)
+        for (var j = 0; j < agents.length; j++){
+          if (j === i) continue;
+          var o = agents[j], dx = a.x - o.x, dy = a.y - o.y;
+          var ovx = (dx >= 0 ? o.w - dx : a.w + dx) + 6, ovy = 30 - Math.abs(dy);
+          if (ovx > 0 && ovy > 0){
+            if (ovy < ovx) a.vy += (dy >= 0 ? 1 : -1) * Math.min(ovy, 12) * 0.05 * dt;
+            else a.vx += (dx >= 0 ? 1 : -1) * Math.min(ovx, 12) * 0.05 * dt;
+          }
+        }
+        var damp = Math.pow(onBtn ? 0.78 : 0.86, dt);
+        a.vx *= damp; a.vy *= damp;
+        a.x += a.vx * dt; a.y += a.vy * dt;
+        if (Math.abs(a.vx) + Math.abs(a.vy) > 0.05 || Math.abs(tx - a.x) + Math.abs(ty - a.y) > 0.5) moving = true;
+        a.el.style.transform = 'translate3d(' + a.x.toFixed(1) + 'px,' + a.y.toFixed(1) + 'px,0)';
+      }
+      if (mode !== 'off' && (moving || mode === 'follow')) raf = requestAnimationFrame(step);
+      else last = 0;
+    };
+    var kick = function(){ if (!raf) raf = requestAnimationFrame(step); };
+
+    var enter = function(e){
+      if (reduced() || !finePointer()) return;
+      if (!layer) build();
+      clearTimeout(hideTimer);
+      measure();
+      cx = e.clientX; cy = e.clientY;
+      if (mode === 'off'){
+        // Das Team kommt von den Rändern dazu
+        agents.forEach(function(a, i){
+          a.x = i % 2 ? rect.width + 40 : -40; a.y = rect.height * (0.2 + 0.6 * ((i * 37) % 100) / 100);
+          a.vx = 0; a.vy = 0;
+        });
+      }
+      mode = 'follow';
+      layer.classList.add('on');
+      kick();
+    };
+    cta.addEventListener('pointerenter', function(e){ if (e.pointerType === 'mouse') enter(e); });
+    cta.addEventListener('pointermove', function(e){
+      if (e.pointerType !== 'mouse') return;
+      if (mode === 'off'){ enter(e); return; }
+      cx = e.clientX; cy = e.clientY;
+      kick();
+    }, {passive: true});
+    cta.addEventListener('pointerleave', function(){
+      if (mode === 'off' || !layer) return;
+      layer.classList.remove('on');
+      mode = 'leaving';
+      hideTimer = setTimeout(function(){ mode = 'off'; }, 400);
+    });
+    if (btn){
+      btn.addEventListener('pointerenter', function(e){ if (mode !== 'off' && e.pointerType === 'mouse'){ measure(); mode = 'button'; layer.classList.add('meet'); kick(); } });
+      btn.addEventListener('pointerleave', function(){ if (mode === 'button'){ mode = 'follow'; layer.classList.remove('meet'); kick(); } });
+    }
+    // Beim Scrollen oder Größe ändern verschiebt sich der Block: neu messen
+    window.addEventListener('scroll', function(){ if (mode !== 'off'){ measure(); kick(); } }, {passive: true});
+    window.addEventListener('resize', function(){ if (mode !== 'off') measure(); });
+  })();
+
   /* ---------- Links ----------
      Aufklappbare Abschnitte öffnen sich, wenn ein Link direkt auf sie zeigt.
      Ein Klick auf die Seite, auf der man schon ist, führt nach oben statt die Seite neu zu laden. */
