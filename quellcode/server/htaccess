@@ -34,7 +34,7 @@
 </IfModule>
 
 # Interne Dateien nicht ausliefern, falls sie versehentlich mit hochgeladen werden
-<FilesMatch "(\.py$|^LIESMICH\.txt$|^_headers$)">
+<FilesMatch "(\.py$|^LIESMICH\.txt$|^README\.md$|^_headers$)">
   <IfModule mod_authz_core.c>
     Require all denied
   </IfModule>
