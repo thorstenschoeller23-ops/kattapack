@@ -837,24 +837,6 @@ body::before{
 .cta .btn{background:var(--paper-ink);border-color:var(--paper-ink);color:var(--paper)}
 .cta .btn:hover{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .mailline{font-family:var(--font-mono);font-size:.9375rem;user-select:all}
-/* Anfrage-Block wird gebaut (siehe site.js): Cursor ziehen Box, Textfelder und Button auf */
-.cta.build{background-color:var(--bg)}
-.cta-bg{position:absolute;inset:0;background:var(--kraft)}
-.build-layer{position:absolute;inset:0;pointer-events:none;z-index:3;transition:opacity .45s var(--ease-out)}
-.build-sel{position:absolute;left:0;top:0;width:0;height:0;opacity:0;border:1.5px solid var(--cur)}
-.build-sel i{position:absolute;width:7px;height:7px;background:var(--paper);border:1.5px solid var(--cur)}
-.build-sel i:nth-child(1){left:-4px;top:-4px}
-.build-sel i:nth-child(2){right:-4px;top:-4px}
-.build-sel i:nth-child(3){left:-4px;bottom:-4px}
-.build-sel i:nth-child(4){right:-4px;bottom:-4px}
-.build-size{position:absolute;left:50%;top:100%;margin-top:8px;transform:translateX(-50%);padding:2px 6px;border-radius:2px;background:var(--cur);color:var(--cur-ink);font-family:var(--font-mono);font-size:.625rem;font-weight:600;letter-spacing:.04em;white-space:nowrap;opacity:0}
-.build-cur{position:absolute;left:0;top:0;display:flex;align-items:flex-start;opacity:0;will-change:transform}
-.build-cur svg{display:block;flex:none;width:15px;height:19px;fill:var(--cur);stroke:var(--cur-edge);stroke-width:1.3;stroke-linejoin:round;filter:drop-shadow(0 2px 2px rgba(30,18,6,.28))}
-.build-cur b{margin:13px 0 0 -3px;padding:3px 7px 4px;border-radius:2px;background:var(--cur);color:var(--cur-ink);font-family:var(--font-mono);font-size:.6875rem;font-weight:600;line-height:1.2;letter-spacing:.06em;white-space:nowrap;box-shadow:0 5px 12px -7px rgba(30,18,6,.55)}
-.c0{--cur:var(--magma);--cur-ink:var(--on-magma);--cur-edge:var(--paper)}
-.c1{--cur:var(--paper-ink);--cur-ink:var(--paper);--cur-edge:var(--paper)}
-.c2{--cur:var(--paper);--cur-ink:var(--paper-ink);--cur-edge:var(--paper-ink)}
-@media print{.build-layer{display:none}.cta-bg,.cta .tape-strip,.cta-inner *{clip-path:none!important}}
 @media (max-width:900px){.cta-inner{grid-template-columns:minmax(0,1fr);align-items:start;padding-block:92px 56px}}
 
 /* ---------- Häufige Fragen ---------- */
@@ -1095,6 +1077,38 @@ body::before{
 .footer-bottom nav{display:flex;gap:22px}
 .footer-bottom a{text-decoration:none}
 .footer-bottom a:hover{text-decoration:underline}
+
+/* Footer wird gebaut (siehe site.js): Cursor ziehen jedes Element auf wie in einem Design-Programm */
+.site-footer{position:relative}
+.build-layer{position:absolute;inset:0;pointer-events:none;z-index:3;overflow:hidden}
+.build-sel{position:absolute;left:0;top:0;width:0;height:0;opacity:0;border:1.5px solid var(--cur);transition:opacity .3s var(--ease-out)}
+.build-sel.on{opacity:1}
+.build-sel i{position:absolute;width:7px;height:7px;background:var(--bg);border:1.5px solid var(--cur)}
+.build-sel i:nth-child(1){left:-4px;top:-4px}
+.build-sel i:nth-child(2){right:-4px;top:-4px}
+.build-sel i:nth-child(3){left:-4px;bottom:-4px}
+.build-sel i:nth-child(4){right:-4px;bottom:-4px}
+/* Hilfslinien beim Aufziehen: zeigen, woran das Element ausgerichtet wird */
+.build-sel::before,.build-sel::after{content:"";position:absolute;opacity:0;transition:opacity .2s}
+.build-sel::before{left:-1.5px;top:-100vh;bottom:-100vh;border-left:1px dashed var(--magma)}
+.build-sel::after{top:-1.5px;left:-100vw;right:-100vw;border-top:1px dashed var(--magma)}
+.build-sel.drag::before,.build-sel.drag::after{opacity:.55}
+.build-sel.is-line{border-width:0;border-top:2px solid var(--cur)}
+.build-sel.is-line i{display:none}
+.build-sel.is-line::before{display:none}
+.build-size{position:absolute;left:50%;top:100%;margin-top:8px;transform:translateX(-50%);padding:2px 6px;border-radius:2px;background:var(--cur);color:var(--cur-ink);font-family:var(--font-mono);font-size:.625rem;font-weight:600;letter-spacing:.04em;white-space:nowrap;opacity:0;transition:opacity .2s}
+.build-sel.drag .build-size:not(:empty){opacity:1}
+.build-cur{position:absolute;left:0;top:0;display:flex;align-items:flex-start;opacity:0;will-change:transform}
+.build-cur svg{position:relative;display:block;flex:none;width:15px;height:19px;fill:var(--cur);stroke:var(--cur-edge);stroke-width:1.3;stroke-linejoin:round;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+/* kurzer Klick beim Loslassen */
+.build-tap{position:absolute;left:-9px;top:-9px;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--cur);opacity:0}
+.build-cur.tap .build-tap{animation:build-tap .45s var(--ease-out)}
+@keyframes build-tap{from{opacity:.9;transform:scale(.3)}to{opacity:0;transform:scale(1.6)}}
+/* Farben, die hell und dunkel funktionieren */
+.f0{--cur:var(--magma);--cur-ink:var(--on-magma);--cur-edge:var(--bg)}
+.f1{--cur:var(--ink);--cur-ink:var(--bg);--cur-edge:var(--bg)}
+.f2{--cur:var(--accent);--cur-ink:var(--on-accent);--cur-edge:var(--bg)}
+@media print{.build-layer{display:none}.site-footer *{clip-path:none!important}}
 @media (max-width:900px){.footer-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media (max-width:520px){.footer-grid{grid-template-columns:minmax(0,1fr)}}
 

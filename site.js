@@ -247,7 +247,7 @@
   (function(){
     if (reduced() || !hasIO || !finePointer()) return;
     var sel = '.section-head,.how > li,.door,.grid-2 > .item,.grid-3 > .item,.split-text,.split-visual,.route-step,.law,' +
-              '.steps > li,.flow > li,.calc,.table-wrap,.acc-list,.grow-title,.grow-body,.faq-group';
+              '.steps > li,.flow > li,.calc,.table-wrap,.acc-list,.grow-title,.grow-body,.cta-title,.cta-side,.faq-group';
     var vh = window.innerHeight || 800;
     var io = new IntersectionObserver(function(entries){
       entries.forEach(function(en){
@@ -265,119 +265,146 @@
     });
   })();
 
-  /* ---------- Anfrage-Block wird gebaut ----------
-     Unten im Block „Erzählen Sie uns von Ihrem Shop“: Beim Hinscrollen kommen Cursor wie in einem
-     Design-Programm. Jeder setzt an der linken oberen Ecke seines Elements an und zieht es nach rechts
-     unten auf: erst die Box, dann die Textfelder, der Button und die E-Mail-Adresse.
-     Läuft mit dem Scrollen (auch am Handy und iPad), einmal gebaut bleibt alles stehen.
-     Nicht bei „Bewegung reduzieren“. Ohne Skript ist alles sofort sichtbar. */
+  /* ---------- Footer wird gebaut ----------
+     Ganz unten auf jeder Seite: Sobald ein Teil des Footers ins Bild kommt, wird er gebaut
+     wie in einem Design-Programm. Für jedes Element kommt ein eigener Cursor, setzt an der linken oberen
+     Ecke an und zieht es nach rechts unten auf: Logo, Texte, Überschriften, jeder Link, die Trennlinien.
+     Mit Auswahlrahmen, Hilfslinien, Maßangabe und einem kurzen Klick beim Loslassen.
+     Jedes Element braucht gut eine Sekunde, danach steht alles. Läuft auch am Handy und iPad.
+     Nicht bei „Bewegung reduzieren“. Ohne Skript, beim Drucken und bei Tastaturfokus ist alles sofort da. */
   (function(){
-    var cta = document.querySelector('.cta');
-    if (!cta || !window.requestAnimationFrame || reduced()) return;
-    var q = function(s){ return cta.querySelector(s); };
+    var foot = document.querySelector('.site-footer');
+    if (!foot || !window.requestAnimationFrame || !hasIO || reduced()) return;
     var ARROW = '<svg viewBox="0 0 16 20" aria-hidden="true" focusable="false"><path d="M1.5 1.5v15.2l4.1-3.9 2.7 6.1 2.6-1.1-2.7-6h5.6Z"/></svg>';
-    // Element, Name am Cursor, Farbe, Anfang und Ende im Ablauf (0 bis 1)
-    var PLAN = [
-      [null, 'Lager', 'c0', 0, .34],
-      [q('.cta-title'), 'Packtisch', 'c1', .2, .54],
-      [q('.cta-side p'), 'Wareneingang', 'c2', .36, .68],
-      [q('.cta-side .btn'), 'Versand', 'c0', .52, .84],
-      [q('.cta-side .mailline'), 'Ihr Kontakt', 'c1', .64, .96]
-    ];
-    var bg = document.createElement('div');
-    bg.className = 'cta-bg';
-    bg.setAttribute('aria-hidden', 'true');
-    cta.insertBefore(bg, cta.firstChild);
-    var tape = q('.tape-strip');
-    PLAN[0][0] = bg;
+    var list = [];
+    var add = function(el, kind){ if (el) list.push({ el: el, kind: kind || 'box' }); };
+    var all = function(s){ return Array.prototype.slice.call(foot.querySelectorAll(s)); };
+    var bottom = foot.querySelector('.footer-bottom');
+    add(foot, 'line');                                  // obere Kante des Footers
+    add(foot.querySelector('.footer-brand .brand'));
+    add(foot.querySelector('.footer-brand p'));
+    add(foot.querySelector('.footer-brand .mailline'));
+    all('.footer-grid nav.footer-col').forEach(function(col){
+      add(col.querySelector('.kicker'));
+      Array.prototype.slice.call(col.querySelectorAll('a')).forEach(function(a){ add(a, 'box'); });
+    });
+    add(bottom, 'line');                                // Trennlinie über der unteren Leiste
+    if (bottom) Array.prototype.slice.call(bottom.children).forEach(function(ch){
+      if (ch.tagName === 'NAV') Array.prototype.slice.call(ch.children).forEach(function(a){ add(a, 'box'); });
+      else add(ch, 'box');
+    });
+    if (!list.length) return;
+
     var layer = document.createElement('div');
     layer.className = 'build-layer';
     layer.setAttribute('aria-hidden', 'true');
-    var items = PLAN.filter(function(p){ return p[0]; }).map(function(p){
-      var sel = document.createElement('div');
-      sel.className = 'build-sel ' + p[2];
-      sel.innerHTML = '<i></i><i></i><i></i><i></i><span class="build-size"></span>';
-      var cur = document.createElement('span');
-      cur.className = 'build-cur ' + p[2];
-      cur.innerHTML = ARROW + '<b>' + p[1] + '</b>';
-      layer.appendChild(sel); layer.appendChild(cur);
-      return { el: p[0], a: p[3], b: p[4], sel: sel, size: sel.querySelector('.build-size'), cur: cur, x: 0, y: 0, w: 0, h: 0, extra: p[0] === bg ? tape : null };
-    });
-    cta.appendChild(layer);
-    cta.classList.add('build');
-
+    var clip = function(el, v){ el.style.clipPath = v; el.style.webkitClipPath = v; };
     var clamp = function(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); };
     var seg = function(t, a, b){ return clamp((t - a) / (b - a)); };
     var ease = function(x){ return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
-    var clip = function(el, v){ el.style.clipPath = v; el.style.webkitClipPath = v; };
-    var start = 0, end = 1, best = 0, done = false, ticking = false;
+    var seed = 7;
+    var rnd = function(){ seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
 
-    var measure = function(){
-      var r = cta.getBoundingClientRect(), vh = window.innerHeight || 800;
-      items.forEach(function(it){
-        var e = it.el.getBoundingClientRect();
-        it.x = e.left - r.left; it.y = e.top - r.top; it.w = e.width; it.h = e.height;
-      });
-      // Gebaut wird, während der Block von unten ins Bild kommt. Spätestens am Seitenende ist alles fertig.
-      var top = r.top + window.scrollY, max = Math.max(0, root.scrollHeight - vh);
-      start = top - vh * .82;
-      end = Math.min(start + vh * .62, max);
-      if (end - start < 160) start = end - 160;
+    var items = list.map(function(it, i){
+      var sel = document.createElement('div');
+      var col = 'f' + (i % 3);
+      sel.className = 'build-sel ' + col + (it.kind === 'line' ? ' is-line' : '');
+      sel.innerHTML = '<i></i><i></i><i></i><i></i><span class="build-size"></span>';
+      var cur = document.createElement('span');
+      cur.className = 'build-cur ' + col;
+      cur.innerHTML = '<span class="build-tap"></span>' + ARROW;
+      layer.appendChild(sel); layer.appendChild(cur);
+      it.sel = sel; it.cur = cur; it.size = sel.querySelector('.build-size');
+      it.state = 0; // 0 wartet, 1 läuft, 2 fertig
+      it.dur = (it.kind === 'line' ? 1150 : 820) + Math.round(rnd() * 420);
+      it.fx = -50 - rnd() * 110; it.fy = -30 - rnd() * 70;  // woher der Cursor kommt
+      // Unsichtbar, bis es gebaut wird. Linien: Rand ausblenden, gezeichnet wird im Overlay.
+      if (it.kind === 'line') it.el.style.borderTopColor = 'transparent';
+      else clip(it.el, 'inset(0 100% 100% 0)');
+      return it;
+    });
+    foot.classList.add('building');
+    foot.appendChild(layer);
+
+    var measure = function(it){
+      var r = foot.getBoundingClientRect(), e = it.el.getBoundingClientRect();
+      it.x = e.left - r.left; it.y = e.top - r.top; it.w = e.width; it.h = e.height;
+      if (it.kind === 'line'){ it.h = 1; }
     };
-
-    var render = function(p){
+    var raf = null, left = items.length;
+    var frame = function(now){
+      raf = null;
+      var busy = false;
       items.forEach(function(it){
-        var t = clamp((p - it.a) / (it.b - it.a));
-        var come = seg(t, 0, .22), drag = ease(seg(t, .22, .86)), go = seg(t, .86, 1);
-        var targets = it.extra ? [it.el, it.extra] : [it.el];
-        var v = drag >= 1 ? '' : 'inset(0 ' + ((1 - drag) * 100).toFixed(2) + '% ' + ((1 - drag) * 100).toFixed(2) + '% 0)';
-        targets.forEach(function(el){ clip(el, v); });
-        // Auswahlrahmen wie im Design-Programm, mit Maßangabe beim Aufziehen
-        var w = it.w * drag, h = it.h * drag;
-        it.sel.style.opacity = t > .22 && t < 1 ? '1' : (t >= 1 ? (1 - seg(p, it.b, it.b + .08)).toFixed(3) : '0');
+        if (it.state !== 1) return;
+        var t = clamp((now - it.t0) / it.dur);
+        if (t <= 0){ busy = true; return; }
+        var come = ease(seg(t, 0, .26)), drag = ease(seg(t, .26, .84)), go = seg(t, .84, 1);
+        var w = it.w * drag, h = it.kind === 'line' ? 1 : it.h * drag;
+        if (it.kind !== 'line') clip(it.el, drag >= 1 ? '' : 'inset(0 ' + ((1 - drag) * 100).toFixed(2) + '% ' + ((1 - drag) * 100).toFixed(2) + '% 0)');
         it.sel.style.transform = 'translate3d(' + it.x.toFixed(1) + 'px,' + it.y.toFixed(1) + 'px,0)';
         it.sel.style.width = w.toFixed(1) + 'px';
         it.sel.style.height = h.toFixed(1) + 'px';
-        it.size.textContent = Math.round(w) + ' × ' + Math.round(h);
-        it.size.style.opacity = drag > .1 && drag < 1 ? '1' : '0';
-        // Cursor: kommt zur linken oberen Ecke, zieht nach rechts unten, lässt los und geht
-        var cx, cy;
-        if (come < 1){ cx = it.x - 90 * (1 - come); cy = it.y - 60 * (1 - come); }
-        else { cx = it.x + w + 26 * go; cy = it.y + h + 18 * go; }
-        it.cur.style.opacity = t <= 0 || t >= 1 ? '0' : Math.min(seg(t, 0, .1), 1 - go).toFixed(3);
+        it.sel.classList.toggle('on', drag > 0 && t < 1);
+        it.sel.classList.toggle('drag', drag > 0 && drag < 1);
+        if (it.w > 120 && it.kind !== 'line'){ it.size.textContent = w > 60 ? Math.round(w) + ' × ' + Math.round(h) : ''; }
+        var cx = come < 1 ? it.x + it.fx * (1 - come) : it.x + w + 22 * go;
+        var cy = come < 1 ? it.y + it.fy * (1 - come) : it.y + h + 16 * go;
+        it.cur.style.opacity = Math.min(seg(t, 0, .12), 1 - go).toFixed(3);
         it.cur.style.transform = 'translate3d(' + cx.toFixed(1) + 'px,' + cy.toFixed(1) + 'px,0)';
+        if (go > 0 && !it.tapped){ it.tapped = true; it.cur.classList.add('tap'); }
+        if (t >= 1) done(it); else busy = true;
       });
+      if (busy) raf = requestAnimationFrame(frame);
     };
-
-    var update = function(){
-      ticking = false;
-      if (done) return;
-      var p = clamp((window.scrollY - start) / (end - start));
-      if (p <= best && best > 0) return;
-      best = p;
-      render(p);
-      if (p >= 1){ finish(); }
+    var done = function(it){
+      if (it.state === 2) return;
+      it.state = 2;
+      if (it.kind === 'line') it.el.style.borderTopColor = '';
+      else clip(it.el, '');
+      it.sel.classList.remove('on', 'drag');
+      it.cur.style.opacity = '0';
+      if (--left === 0) finishLayer();
     };
-    // Fertig: alles sichtbar, Ebenen weg, nichts rechnet mehr
-    var finish = function(){
-      done = true;
-      render(1);
-      layer.style.opacity = '0';
-      setTimeout(function(){ if (layer.parentNode) layer.parentNode.removeChild(layer); }, 500);
-      window.removeEventListener('scroll', onScroll);
+    var finishLayer = function(){
+      io.disconnect();
+      window.removeEventListener('scroll', atEnd);
+      foot.classList.remove('building');
+      setTimeout(function(){ if (layer.parentNode) layer.parentNode.removeChild(layer); }, 600);
     };
-    var onScroll = function(){ if (!ticking){ ticking = true; requestAnimationFrame(update); } };
-
-    measure();
-    render(0);
-    update();
-    window.addEventListener('scroll', onScroll, {passive: true});
-    window.addEventListener('resize', function(){ if (!done){ measure(); render(best); update(); } });
-    window.addEventListener('load', function(){ if (!done){ measure(); update(); } });
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if (!done){ measure(); update(); } });
-    // Mit der Tastatur in den Block gesprungen: sofort alles zeigen, damit der Fokus sichtbar ist
-    cta.addEventListener('focusin', function(){ if (!done) finish(); });
-    window.addEventListener('beforeprint', function(){ if (!done) finish(); });
+    var start = function(it, delay){
+      if (it.state !== 0) return;
+      measure(it);
+      it.state = 1;
+      it.t0 = performance.now() + delay;
+      if (!raf) raf = requestAnimationFrame(frame);
+    };
+    // Was ins Bild kommt, wird gebaut. Was gleichzeitig kommt, startet leicht versetzt: so arbeitet das ganze Team auf einmal.
+    var batch = 0, batchAt = 0;
+    var io = new IntersectionObserver(function(entries){
+      var now = performance.now();
+      if (now - batchAt > 250){ batch = 0; batchAt = now; }
+      entries.forEach(function(en){
+        if (!en.isIntersecting) return;
+        var it = en.target.__build;
+        if (it){ start(it, Math.min(batch, 14) * 85); batch++; }
+        io.unobserve(en.target);
+      });
+    }, {threshold: .01});
+    // Sicherung: Am Seitenende wird alles gebaut, was noch fehlt (ganz unten Liegendes kommt sonst nie weiter ins Bild)
+    var atEnd = function(){
+      if (left === 0){ window.removeEventListener('scroll', atEnd); return; }
+      if (window.innerHeight + window.scrollY >= root.scrollHeight - 4){
+        var k = 0;
+        items.forEach(function(it){ if (it.state === 0){ io.unobserve(it.el); start(it, Math.min(k++, 14) * 85); } });
+      }
+    };
+    window.addEventListener('scroll', atEnd, {passive: true});
+    items.forEach(function(it){ it.el.__build = it; io.observe(it.el); });
+    // Sofort alles zeigen: Tastatur im Footer, Drucken
+    var finishAll = function(){ items.forEach(done); };
+    foot.addEventListener('focusin', finishAll);
+    window.addEventListener('beforeprint', finishAll);
   })();
 
   /* ---------- Links ----------
