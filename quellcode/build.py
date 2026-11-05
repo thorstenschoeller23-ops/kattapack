@@ -12,7 +12,7 @@ Aufbau: einfacher Einstieg, Tiefe auf Abruf.
    Start · Leistungen · Preise · So starten Sie · Fragen  (+ Über uns, Kontakt, Impressum, Datenschutz)
 Alle Texte stehen in diesem Skript. Design: site.css, Funktionen: site.js.
 """
-import os, re, sys, shutil
+import os, re, sys, shutil, hashlib
 
 SRC = os.path.dirname(os.path.abspath(__file__))
 ARGS = sys.argv[1:]
@@ -30,6 +30,14 @@ GOOGLE_FONTS = ('<link rel="preconnect" href="https://fonts.googleapis.com">'
                 '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900'
                 '&family=IBM+Plex+Mono:wght@400;500;600&display=swap">')
 LOCAL_FONTS = '<link rel="stylesheet" href="fonts/fonts.css">'
+
+# Versionsnummer aus dem Inhalt: Browser dürfen site.css und site.js lange zwischenspeichern
+# und laden sie nach jeder Änderung trotzdem neu (spart Datenvolumen beim Hoster).
+def _ver(name):
+    with open(os.path.join(SRC, name), "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()[:10]
+CSS_HREF = "site.css?v=" + _ver("site.css")
+JS_SRC = "site.js?v=" + _ver("site.js")
 
 # ---------------------------------------------------------------- Logo
 # Das Logo liegt als Vektorgrafik in assets/ (logo-mark.svg: Katta mit Paket, logo-word.svg: Schriftzug,
@@ -99,12 +107,12 @@ NEXT = {
     "ablauf": ("fragen", "Häufige Fragen, Vergleich und Pflichten für Shops"),
 }
 
-MARK_UP = ('<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square">'
+MARK_UP = ('<svg aria-hidden="true" focusable="false" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="square">'
            '<path d="M8 21V6M4 10l4-4 4 4M20 21V6M16 10l4-4 4 4M3 25h22"/></svg>')
-MARK_GLASS = ('<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round">'
+MARK_GLASS = ('<svg aria-hidden="true" focusable="false" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round">'
               '<path d="M8 3h12l-1 8.5a5 5 0 0 1-10 0Z"/><path d="M14 16.5V24M9.5 25h9"/>'
               '<path d="M13 4.5l1.8 3-2 2.4 1.4 2" stroke-width="1.6"/></svg>')
-MARK_DRY = ('<svg viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
+MARK_DRY = ('<svg aria-hidden="true" focusable="false" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">'
             '<path d="M3 17a11 11 0 0 1 22 0Z"/><path d="M14 17v6a2.5 2.5 0 0 1-5 0"/>'
             '<path d="M7 2.5v2M14 1v2M21 2.5v2"/></svg>')
 
@@ -164,7 +172,7 @@ def footer():
             '<a href="leistungen.html#sonderwuensche">Sonderwünsche</a><a href="ablauf.html#anlieferung">Anlieferung</a>'
             '<a href="fragen.html#haeufige-fragen">Häufige Fragen</a><a href="fragen.html#pflichten">Pflichten für Shops</a></nav>'
             '</div><div class="footer-bottom"><span>© <span data-year>2026</span> KattaPack</span>'
-            '<nav aria-label="Rechtliches"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a></nav>'
+            '<nav aria-label="Rechtliches"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="barrierefreiheit.html">Barrierefreiheit</a></nav>'
             '</div></div></footer>')
 
 
@@ -259,7 +267,7 @@ BOX = (
     '<div class="ship">'
       '<div><span class="k">Von</span><span class="v">Ihr Shop</span></div>'
       '<div class="big"><span class="k">An</span><span class="v">Ihre Kunden</span></div>'
-      '<div class="ship-code"><svg class="barcode" data-barcode="26102104" viewBox="0 0 300 60" preserveAspectRatio="none"></svg><span>KP 2610 2104 8270</span></div>'
+      '<div class="ship-code"><svg class="barcode" data-barcode="26102104" viewBox="0 0 300 60" preserveAspectRatio="none" aria-hidden="true" focusable="false"></svg><span>KP 2610 2104 8270</span></div>'
       '<div class="ship-foot"><span class="k">Lagerkosten</span><span class="v">0,00&nbsp;€</span></div>'
     '</div>'
     '<span class="open-here">' + ARROW_LEFT + 'Hier öffnen</span>'
@@ -321,10 +329,10 @@ ROUTE = '''<div class="route" role="list">
 <div class="route-step" role="listitem"><a class="station" href="#verpackung"><span class="bin">VP</span><span class="st-name">Verpackung</span><span class="st-text">Passender Karton, sauber verschlossen</span></a></div>
 <div class="route-step" role="listitem"><a class="station" href="#versand"><span class="bin">WA</span><span class="st-name">Versand</span><span class="st-text">Übergabe an den Paketdienst</span></a></div>
 <div class="route-step" role="listitem"><a class="station" href="#retouren"><span class="bin">RET</span><span class="st-name">Retouren</span><span class="st-text">Prüfen und zurück in den Bestand</span></a></div>
-<div class="route-return" aria-hidden="true"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M100 0 V100 H0 V0" vector-effect="non-scaling-stroke"/></svg><span>Verkaufsfähige Retouren gehen zurück ins Lager</span></div>
+<div class="route-return" aria-hidden="true"><svg aria-hidden="true" focusable="false" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M100 0 V100 H0 V0" vector-effect="non-scaling-stroke"/></svg><span>Verkaufsfähige Retouren gehen zurück ins Lager</span></div>
 </div>'''
 
-COND_TABLE = '''<div class="table-wrap"><table class="tbl">
+COND_TABLE = '''<div class="table-wrap" tabindex="0" role="region" aria-label="Tabelle: Zustandsklassen bei Retouren"><table class="tbl">
 <thead><tr><th scope="col">Klasse</th><th scope="col">Zustand</th><th scope="col">Was passiert</th></tr></thead>
 <tbody>
 <tr><td class="grade">A</td><td>Originalverpackt oder ungenutzt</td><td>Zurück in den Bestand</td></tr>
@@ -559,7 +567,7 @@ PAGES["leistungen"] = ("Leistungen · KattaPack",
 
 # ================================================================ Preise
 CALC = '''<div class="calc" id="calc">
-<form class="calc-in" onsubmit="return false" aria-labelledby="rechner-title">
+<form class="calc-in" aria-labelledby="rechner-title">
 <div class="field"><label for="c-count">Anzahl Kartons</label><div class="unit-wrap"><input id="c-count" type="number" inputmode="numeric" min="1" step="1" value="100"><span class="unit">Stk.</span></div></div>
 <div class="row-3">
 <div class="field"><label for="c-l">Länge</label><div class="unit-wrap"><input id="c-l" type="number" inputmode="decimal" min="1" step="1" value="40"><span class="unit">cm</span></div></div>
@@ -607,7 +615,7 @@ PAGES["preise"] = ("Preise · KattaPack",
 
 <section class="section" id="kosten" aria-labelledby="kosten-title"><div class="wrap">
 <div class="section-head"><h2 id="kosten-title">Woraus sich Ihre Kosten zusammensetzen</h2><p>Fulfillment wird meist nach Bausteinen abgerechnet. So zahlen Sie für das, was tatsächlich anfällt.</p></div>
-<div class="table-wrap"><table class="tbl">
+<div class="table-wrap" tabindex="0" role="region" aria-label="Tabelle: Kostenbausteine"><table class="tbl">
 <thead><tr><th scope="col">Baustein</th><th scope="col">Was dazugehört</th><th scope="col">Abrechnung</th></tr></thead>
 <tbody>
 <tr><th scope="row">Lagerung</th><td>Platz im Regal für Ihre Ware</td><td><span class="hi">0,00&nbsp;€ bis 3 Palettenstellplätze</span>, darüber pro Stellplatz und Monat</td></tr>
@@ -799,7 +807,7 @@ PAGES["fragen"] = ("Fragen · KattaPack",
 
 <section class="section" id="vergleich" aria-labelledby="vgl-title"><div class="wrap">
 <div class="section-head"><h2 id="vgl-title">Selbst versenden oder auslagern?</h2><p>Beides hat Vorteile. Die Tabelle zeigt, worin sich die Wege unterscheiden.</p></div>
-<div class="table-wrap"><table class="tbl">
+<div class="table-wrap" tabindex="0" role="region" aria-label="Tabelle: Selbst versenden oder auslagern"><table class="tbl">
 <thead><tr><th scope="col">Thema</th><th scope="col">Selbst versenden</th><th scope="col">Mit KattaPack</th></tr></thead>
 <tbody>
 <tr><th scope="row">Zeit</th><td>Packen, Etiketten, Abholung und Retouren kosten jeden Tag Zeit.</td><td>Bestellungen laufen zu uns. Sie kümmern sich um Ihren Shop.</td></tr>
@@ -948,7 +956,7 @@ PAGES["impressum"] = ("Impressum · KattaPack", "Impressum von KattaPack.",
 <section><h2>Kontakt</h2><p>E-Mail: ''' + EMAIL + '''<br>Telefon: <span class="ph">Telefonnummer</span></p></section>
 <section><h2>Registereintrag</h2><p>Registergericht: <span class="ph">Amtsgericht</span><br>Registernummer: <span class="ph">HRB / HRA</span><br>Nur ausfüllen, wenn ein Handelsregistereintrag besteht.</p></section>
 <section><h2>Umsatzsteuer-Identifikationsnummer</h2><p>gemäß § 27a Umsatzsteuergesetz: <span class="ph">DE…</span></p></section>
-<section><h2>Verantwortlich für redaktionelle Inhalte</h2><p>nach § 18 Abs. 2 Medienstaatsvertrag: <span class="ph">Name, Anschrift</span></p></section>
+<section><h2>Verantwortlich für redaktionelle Inhalte</h2><p>nach § 18 Abs. 2 Medienstaatsvertrag: <span class="ph">Name, Anschrift</span><br>Nötig bei journalistisch-redaktionellen Inhalten wie den Erklärtexten auf der Seite „Fragen“. Im Zweifel ausfüllen.</p></section>
 </div></section>''')
 
 # ================================================================ Datenschutz
@@ -957,12 +965,26 @@ PAGES["datenschutz"] = ("Datenschutz · KattaPack", "Datenschutzerklärung von K
   '''<section class="section"><div class="wrap legal-body">
 <p class="legal-note">Vorlage: Bitte vor der Veröffentlichung ergänzen und von einer fachkundigen Stelle prüfen lassen, etwa mit Blick auf Ihren Hosting-Anbieter.</p>
 <section><h2>1. Verantwortlicher</h2><p><span class="ph">Firmenname und Rechtsform</span>, <span class="ph">Anschrift</span><br>E-Mail: ''' + EMAIL + '''</p></section>
-<section><h2>2. Aufruf der Website</h2><p>Diese Website wird bei <span class="ph">Hosting-Anbieter</span> betrieben. Beim Aufruf verarbeitet der Server technisch notwendige Daten wie IP-Adresse, Datum und Uhrzeit des Abrufs, aufgerufene Seite und Browsertyp. Das ist erforderlich, um die Website sicher bereitzustellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Wie lange diese Daten gespeichert werden: <span class="ph">Speicherdauer laut Hoster</span>.</p></section>
-<section><h2>3. Anfragen per E-Mail und Anfrageformular</h2><p>Das Anfrageformular auf dieser Website überträgt keine Daten an uns. Es fasst Ihre Angaben in Ihrem Browser zu einem E-Mail-Text zusammen, den Sie selbst abschicken. Wenn Sie uns schreiben, verarbeiten wir Ihre Angaben, um Ihre Anfrage zu beantworten und ein Angebot zu erstellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Wir löschen die Daten, wenn sie dafür nicht mehr nötig sind und keine gesetzlichen Aufbewahrungspflichten bestehen.</p></section>
-<section><h2>4. Schriftarten</h2><p>Die Schriftarten dieser Website werden von unserem eigenen Server geladen. Dabei werden keine Daten an Dritte übertragen.</p></section>
-<section><h2>5. Cookies und Analyse</h2><p>Diese Website setzt keine Cookies und verwendet keine Analyse- oder Tracking-Dienste.</p></section>
-<section><h2>6. Ihre Rechte</h2><p>Sie haben das Recht auf</p><ul><li>Auskunft über Ihre gespeicherten Daten (Art. 15 DSGVO)</li><li>Berichtigung unrichtiger Daten (Art. 16 DSGVO)</li><li>Löschung (Art. 17 DSGVO)</li><li>Einschränkung der Verarbeitung (Art. 18 DSGVO)</li><li>Datenübertragbarkeit (Art. 20 DSGVO)</li><li>Widerspruch gegen die Verarbeitung (Art. 21 DSGVO)</li></ul><p>Außerdem können Sie sich bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77 DSGVO).</p></section>
-<section><h2>7. Stand</h2><p><span class="ph">Datum</span></p></section>
+<section><h2>2. Aufruf der Website</h2><p>Diese Website wird bei <span class="ph">Hosting-Anbieter mit Anschrift</span> betrieben. Beim Aufruf verarbeitet der Server technisch notwendige Daten wie IP-Adresse, Datum und Uhrzeit des Abrufs, aufgerufene Seite und Browsertyp. Das ist erforderlich, um die Website sicher bereitzustellen und Angriffe abzuwehren. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO. Unser berechtigtes Interesse ist ein sicherer und stabiler Betrieb der Website. Wie lange diese Daten gespeichert werden: <span class="ph">Speicherdauer laut Hoster</span>.</p>
+<p>Der Hosting-Anbieter verarbeitet die Daten in unserem Auftrag. Mit ihm besteht ein Vertrag zur Auftragsverarbeitung nach Art. 28 DSGVO. Die Verbindung zur Website ist verschlüsselt (HTTPS).</p></section>
+<section><h2>3. Anfragen per E-Mail, Telefon und Anfrageformular</h2><p>Das Anfrageformular auf dieser Website überträgt keine Daten an uns. Es fasst Ihre Angaben in Ihrem Browser zu einem E-Mail-Text zusammen, den Sie selbst abschicken. Wenn Sie uns schreiben oder anrufen, verarbeiten wir Ihre Angaben, um Ihre Anfrage zu beantworten und ein Angebot zu erstellen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Wir löschen die Daten, wenn sie dafür nicht mehr nötig sind und keine gesetzlichen Aufbewahrungspflichten bestehen.</p>
+<p>Ihre Angaben sind freiwillig. Ohne sie können wir Ihre Anfrage aber nicht beantworten. E-Mails liegen bei unserem E-Mail-Anbieter <span class="ph">E-Mail-Anbieter, oft derselbe wie der Hoster</span>, der sie in unserem Auftrag speichert.</p></section>
+<section><h2>4. Schriftarten</h2><p>Die Schriftarten dieser Website liegen auf demselben Server wie die Website. Dabei werden keine Daten an Dritte übertragen.</p></section>
+<section><h2>5. Cookies und Analyse</h2><p>Diese Website setzt keine Cookies und verwendet keine Analyse- oder Tracking-Dienste. Eine automatisierte Entscheidungsfindung oder Profilbildung findet nicht statt.</p></section>
+<section><h2>6. Ihre Rechte</h2><p>Sie haben das Recht auf</p><ul><li>Auskunft über Ihre gespeicherten Daten (Art. 15 DSGVO)</li><li>Berichtigung unrichtiger Daten (Art. 16 DSGVO)</li><li>Löschung (Art. 17 DSGVO)</li><li>Einschränkung der Verarbeitung (Art. 18 DSGVO)</li><li>Datenübertragbarkeit (Art. 20 DSGVO)</li></ul><p>Außerdem können Sie sich bei einer Datenschutz-Aufsichtsbehörde beschweren (Art. 77 DSGVO).</p></section>
+<section class="legal-box"><h2>7. Widerspruchsrecht</h2><p>Wenn wir Daten auf Grundlage von Art. 6 Abs. 1 lit. f DSGVO verarbeiten, also wegen eines berechtigten Interesses, können Sie dem jederzeit widersprechen (Art. 21 DSGVO). Gründe dafür müssen sich aus Ihrer besonderen Situation ergeben. Wir verarbeiten die Daten dann nicht mehr, es sei denn, wir können zwingende schutzwürdige Gründe nachweisen, die Ihre Interessen überwiegen, oder die Verarbeitung dient der Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen. Eine E-Mail an ''' + EMAIL + ''' genügt.</p></section>
+<section><h2>8. Stand</h2><p><span class="ph">Datum</span></p></section>
+</div></section>''')
+
+# ================================================================ Barrierefreiheit
+PAGES["barrierefreiheit"] = ("Barrierefreiheit · KattaPack", "Erklärung zur Barrierefreiheit der Website von KattaPack.",
+  hero("Barrierefreiheit", "Barriere&shy;freiheit", "Diese Website soll für alle gut nutzbar sein, auch mit Tastatur, Screenreader, Vergrößerung oder ohne Animationen.") +
+  '''<section class="section"><div class="wrap legal-body">
+<section><h2>Stand der Barrierefreiheit</h2><p>Wir haben die Website nach den Web Content Accessibility Guidelines (WCAG) 2.2, Stufe AA, gestaltet und geprüft. Nach unserem Prüfstand erfüllt sie diese Anforderungen. Geprüft haben wir alle Seiten mit dem Prüfwerkzeug axe-core, im hellen und dunklen Modus, am Handy und am Computer, und zusätzlich von Hand: Bedienung nur mit der Tastatur, Darstellung bei 320 Pixel Breite und Fehlermeldungen im Anfrageformular.</p></section>
+<section><h2>Was die Website bietet</h2><ul><li>Alle Funktionen lassen sich mit der Tastatur bedienen. Der Fokus ist immer sichtbar.</li><li>Ein Link „Zum Inhalt springen“ führt an der Navigation vorbei.</li><li>Texte haben ausreichend Kontrast, auch im dunklen Modus.</li><li>Die Seiten lassen sich bis 400&nbsp;% vergrößern, ohne dass Inhalte abgeschnitten werden.</li><li>Wer auf seinem Gerät „Bewegung reduzieren“ eingestellt hat, sieht die Seite ohne Animationen.</li><li>Grafiken, die nur schmücken, sind für Screenreader ausgeblendet. Alle Inhalte stehen zusätzlich als Text auf der Seite.</li><li>Pflichtfelder im Anfrageformular sind gekennzeichnet. Fehlt eine Angabe, erscheint eine Meldung direkt am Feld.</li></ul></section>
+<section><h2>Bekannte Einschränkungen</h2><p>Das Paket auf der Startseite ist eine Animation zum Schmücken. Was es zeigt, steht auch im Text daneben.</p></section>
+<section><h2>Barriere gefunden?</h2><p>Wenn Sie auf ein Problem stoßen oder Inhalte in einer anderen Form brauchen, schreiben Sie uns an ''' + EMAIL + '''. Wir antworten persönlich und suchen eine Lösung.</p></section>
+<section><h2>Stand</h2><p>Erstellt am 5. November 2026. Bitte nach größeren Änderungen an der Website erneut prüfen.</p></section>
 </div></section>''')
 
 
@@ -975,12 +997,12 @@ def render(slug, mode):
     cls = 'site page-' + slug + (' has-pagebar' if slug in SECTIONS else '')
     chrome = (sprite(slug == "index") + '<a class="skip" href="#main">Zum Inhalt springen</a>' + header(slug) +
               '<main id="main">' + body + page_next(slug) +
-              ('' if slug in ("kontakt", "impressum", "datenschutz") else cta()) + '</main>' + footer())
+              ('' if slug in ("kontakt", "impressum", "datenschutz", "barrierefreiheit") else cta()) + '</main>' + footer())
     meta = '<meta name="description" content="' + desc + '">'
     if mode == "artifact" and slug == "index":
         return ('<title>' + title + '</title>\n<meta name="claude:viewport-fit-sides" content="cover">\n' + meta + '\n' +
-                GOOGLE_FONTS + '\n<link rel="stylesheet" href="site.css">\n<div class="' + cls + '" lang="de">' + chrome +
-                '</div>\n<script src="site.js"></script>\n')
+                GOOGLE_FONTS + '\n<link rel="stylesheet" href="' + CSS_HREF + '">\n<div class="' + cls + '" lang="de">' + chrome +
+                '</div>\n<script src="' + JS_SRC + '"></script>\n')
     fonts = GOOGLE_FONTS if mode == "artifact" else LOCAL_FONTS
     extra = ''
     if mode == "hosting":
@@ -996,8 +1018,8 @@ def render(slug, mode):
                  '<link rel="apple-touch-icon" href="apple-touch-icon.png">\n')
     return ('<!doctype html>\n<html lang="de">\n<head>\n<meta charset="utf-8">\n'
             '<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n'
-            '<title>' + title + '</title>\n' + meta + '\n' + extra + fonts + '\n<link rel="stylesheet" href="site.css">\n</head>\n'
-            '<body>\n<div class="' + cls + '">' + chrome + '</div>\n<script src="site.js"></script>\n</body>\n</html>\n')
+            '<title>' + title + '</title>\n' + meta + '\n' + extra + fonts + '\n<link rel="stylesheet" href="' + CSS_HREF + '">\n</head>\n'
+            '<body>\n<div class="' + cls + '">' + chrome + '</div>\n<script src="' + JS_SRC + '"></script>\n</body>\n</html>\n')
 
 
 def main():
@@ -1015,6 +1037,10 @@ def main():
         if OUT_A:
             shutil.copy(os.path.join(SRC, name), os.path.join(OUT_A, name))
         shutil.copy(os.path.join(SRC, name), os.path.join(OUT_H, name))
+    # Server-Einstellungen: Zwischenspeichern, Komprimieren, Sicherheits-Header
+    # (.htaccess für Apache-Hoster, _headers für Netlify und Cloudflare Pages)
+    shutil.copy(os.path.join(SRC, "server", "htaccess"), os.path.join(OUT_H, ".htaccess"))
+    shutil.copy(os.path.join(SRC, "server", "_headers"), os.path.join(OUT_H, "_headers"))
     # Symbole für Browser-Tab und Handy-Startbildschirm
     for name in ("favicon.svg", "favicon.ico", "apple-touch-icon.png"):
         shutil.copy(os.path.join(SRC, "assets", name), os.path.join(OUT_H, name))

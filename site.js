@@ -457,6 +457,9 @@
 
   var calc = document.getElementById('calc');
   if (calc){
+    // Enter im Rechner soll die Seite nicht neu laden (früher onsubmit im HTML, das blockieren strenge Sicherheits-Header)
+    var calcForm = calc.querySelector('form');
+    if (calcForm) calcForm.addEventListener('submit', function(e){ e.preventDefault(); });
     var fCount = document.getElementById('c-count');
     var fL = document.getElementById('c-l');
     var fB = document.getElementById('c-b');

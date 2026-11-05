@@ -10,6 +10,9 @@ build.py    Alle Texte und der Aufbau der Seiten
 site.css    Design (Farben, Schriften, Abstände)
 site.js     Funktionen: Menü, Paket-Animation, Leiste „Auf dieser Seite“,
             Stellplatz-Rechner, Anfrageformular
+server/     Server-Einstellungen: htaccess (wird zu .htaccess, für Apache-Hoster)
+            und _headers (für Netlify / Cloudflare Pages). Zwischenspeichern,
+            Komprimieren und Sicherheits-Header
 fonts/      Schriften Archivo und IBM Plex Mono (SIL Open Font License)
 assets/     Logo als Vektorgrafik (logo-mark.svg: Katta mit Paket,
             logo-word.svg: Schriftzug, logo-tag.svg: Unterzeile,
@@ -20,10 +23,17 @@ Neu bauen
 ---------
 Nötig ist Python 3, sonst nichts.
 
-    python3 build.py ausgabe
+Im Repository (Website liegt im Hauptverzeichnis):
 
-Das legt die fertige Website im Ordner "ausgabe" an.
-Danach den Inhalt von "ausgabe" hochladen.
+    python3 quellcode/build.py .
+
+Oder in einen eigenen Ordner:
+
+    python3 quellcode/build.py ausgabe
+
+Hochladen: alle Seiten, site.css, site.js, die Symbole, den Ordner fonts
+und die Datei .htaccess (sie beginnt mit einem Punkt und ist deshalb
+manchmal ausgeblendet). Den Ordner quellcode braucht der Server nicht.
 
 E-Mail-Adresse ändern
 ---------------------
