@@ -247,7 +247,7 @@
   (function(){
     if (reduced() || !hasIO || !finePointer()) return;
     var sel = '.section-head,.how > li,.door,.grid-2 > .item,.grid-3 > .item,.split-text,.split-visual,.route-step,.law,' +
-              '.steps > li,.flow > li,.calc,.table-wrap,.acc-list,.grow-title,.grow-body,.cta-title,.cta-side,.faq-group';
+              '.steps > li,.flow > li,.calc,.table-wrap,.acc-list,.grow-title,.grow-body,.faq-group';
     var vh = window.innerHeight || 800;
     var io = new IntersectionObserver(function(entries){
       entries.forEach(function(en){
@@ -265,125 +265,119 @@
     });
   })();
 
-  /* ---------- Schwarm-Cursor im Abschlussblock ----------
-     Fährt die Maus in den Block „Erzählen Sie uns von Ihrem Shop“, kommt das Team dazu:
-     sechs Cursor folgen dem Mauszeiger. Zeigt man auf „Angebot anfragen“, versammeln sie sich am Button.
-     Nur mit Maus, nicht bei „Bewegung reduzieren“. Reine Dekoration: für Screenreader ausgeblendet,
-     nicht anklickbar. Gerechnet wird nur, solange sich etwas bewegt. */
+  /* ---------- Anfrage-Block wird gebaut ----------
+     Unten im Block „Erzählen Sie uns von Ihrem Shop“: Beim Hinscrollen kommen Cursor wie in einem
+     Design-Programm. Jeder setzt an der linken oberen Ecke seines Elements an und zieht es nach rechts
+     unten auf: erst die Box, dann die Textfelder, der Button und die E-Mail-Adresse.
+     Läuft mit dem Scrollen (auch am Handy und iPad), einmal gebaut bleibt alles stehen.
+     Nicht bei „Bewegung reduzieren“. Ohne Skript ist alles sofort sichtbar. */
   (function(){
     var cta = document.querySelector('.cta');
-    if (!cta || !window.requestAnimationFrame) return;
-    var btn = cta.querySelector('.btn');
-    var NAMES = ['Wareneingang', 'Lager', 'Packtisch', 'Versand', 'Retouren', 'Ihr Kontakt'];
-    // Formation: links und unterhalb des Mauszeigers, damit der Text an der Maus frei bleibt
-    var FORM = [[-128, -34], [-158, 14], [-118, 62], [-52, 98], [30, 54], [70, 118]];
+    if (!cta || !window.requestAnimationFrame || reduced()) return;
+    var q = function(s){ return cta.querySelector(s); };
     var ARROW = '<svg viewBox="0 0 16 20" aria-hidden="true" focusable="false"><path d="M1.5 1.5v15.2l4.1-3.9 2.7 6.1 2.6-1.1-2.7-6h5.6Z"/></svg>';
-    var layer = null, agents = [], raf = null, mode = 'off', cx = 0, cy = 0, last = 0, rect = null, bRect = null, hideTimer = null;
-
-    var build = function(){
-      layer = document.createElement('div');
-      layer.className = 'swarm';
-      layer.setAttribute('aria-hidden', 'true');
-      NAMES.forEach(function(name, i){
-        var el = document.createElement('span');
-        el.className = 'swarm-cur c' + (i % 3);
-        el.innerHTML = ARROW + '<b>' + name + '</b>';
-        layer.appendChild(el);
-        // Jeder Cursor hat seinen Platz im Schwarm rund um den Mauszeiger und ein eigenes Tempo
-        agents.push({ el: el, x: 0, y: 0, vx: 0, vy: 0, ox: FORM[i][0], oy: FORM[i][1], w: 90,
-                      k: 0.022 + (i % 3) * 0.009, ph: i * 1.7 });
-      });
-      cta.appendChild(layer);
-      agents.forEach(function(a){ a.w = a.el.offsetWidth || 90; });
-    };
-    var measure = function(){
-      rect = cta.getBoundingClientRect();
-      bRect = btn ? btn.getBoundingClientRect() : null;
-    };
-    // Sammelpunkte rund um den Button (relativ zum Block)
-    var gather = function(i){
-      var b = bRect, r = rect, n = agents.length;
-      var t = (i + .5) / n, cx = b.left - r.left, cy = b.top - r.top, w = b.width, h = b.height;
-      var per = 2 * (w + h), d = t * per;
-      if (d < w) return [cx + d, cy - 14];
-      d -= w; if (d < h) return [cx + w + 12, cy + d];
-      d -= h; if (d < w) return [cx + w - d, cy + h + 12];
-      d -= w; return [cx - 14, cy + h - d];
-    };
-    var step = function(ts){
-      raf = null;
-      var dt = last ? Math.min(32, ts - last) / 16.7 : 1;
-      last = ts;
-      var moving = false, onBtn = mode === 'button' && bRect;
-      var px = cx - rect.left, py = cy - rect.top;
-      for (var i = 0; i < agents.length; i++){
-        var a = agents[i], tx, ty;
-        if (onBtn){ var g = gather(i); tx = g[0]; ty = g[1]; }
-        else {
-          // leichtes Eigenleben, damit der Schwarm nicht starr wirkt
-          var w = ts / 900 + a.ph;
-          tx = px + a.ox + Math.sin(w) * 9; ty = py + a.oy + Math.cos(w * 1.3) * 7;
-        }
-        var k = onBtn ? 0.06 : a.k;
-        a.vx += (tx - a.x) * k * dt; a.vy += (ty - a.y) * k * dt;
-        // Abstand halten, damit die Namensschilder nicht übereinanderliegen (nach ihrer echten Breite)
-        for (var j = 0; j < agents.length; j++){
-          if (j === i) continue;
-          var o = agents[j], dx = a.x - o.x, dy = a.y - o.y;
-          var ovx = (dx >= 0 ? o.w - dx : a.w + dx) + 6, ovy = 30 - Math.abs(dy);
-          if (ovx > 0 && ovy > 0){
-            if (ovy < ovx) a.vy += (dy >= 0 ? 1 : -1) * Math.min(ovy, 12) * 0.05 * dt;
-            else a.vx += (dx >= 0 ? 1 : -1) * Math.min(ovx, 12) * 0.05 * dt;
-          }
-        }
-        var damp = Math.pow(onBtn ? 0.78 : 0.86, dt);
-        a.vx *= damp; a.vy *= damp;
-        a.x += a.vx * dt; a.y += a.vy * dt;
-        if (Math.abs(a.vx) + Math.abs(a.vy) > 0.05 || Math.abs(tx - a.x) + Math.abs(ty - a.y) > 0.5) moving = true;
-        a.el.style.transform = 'translate3d(' + a.x.toFixed(1) + 'px,' + a.y.toFixed(1) + 'px,0)';
-      }
-      if (mode !== 'off' && (moving || mode === 'follow')) raf = requestAnimationFrame(step);
-      else last = 0;
-    };
-    var kick = function(){ if (!raf) raf = requestAnimationFrame(step); };
-
-    var enter = function(e){
-      if (reduced() || !finePointer()) return;
-      if (!layer) build();
-      clearTimeout(hideTimer);
-      measure();
-      cx = e.clientX; cy = e.clientY;
-      if (mode === 'off'){
-        // Das Team kommt von den Rändern dazu
-        agents.forEach(function(a, i){
-          a.x = i % 2 ? rect.width + 40 : -40; a.y = rect.height * (0.2 + 0.6 * ((i * 37) % 100) / 100);
-          a.vx = 0; a.vy = 0;
-        });
-      }
-      mode = 'follow';
-      layer.classList.add('on');
-      kick();
-    };
-    cta.addEventListener('pointerenter', function(e){ if (e.pointerType === 'mouse') enter(e); });
-    cta.addEventListener('pointermove', function(e){
-      if (e.pointerType !== 'mouse') return;
-      if (mode === 'off'){ enter(e); return; }
-      cx = e.clientX; cy = e.clientY;
-      kick();
-    }, {passive: true});
-    cta.addEventListener('pointerleave', function(){
-      if (mode === 'off' || !layer) return;
-      layer.classList.remove('on');
-      mode = 'leaving';
-      hideTimer = setTimeout(function(){ mode = 'off'; }, 400);
+    // Element, Name am Cursor, Farbe, Anfang und Ende im Ablauf (0 bis 1)
+    var PLAN = [
+      [null, 'Lager', 'c0', 0, .34],
+      [q('.cta-title'), 'Packtisch', 'c1', .2, .54],
+      [q('.cta-side p'), 'Wareneingang', 'c2', .36, .68],
+      [q('.cta-side .btn'), 'Versand', 'c0', .52, .84],
+      [q('.cta-side .mailline'), 'Ihr Kontakt', 'c1', .64, .96]
+    ];
+    var bg = document.createElement('div');
+    bg.className = 'cta-bg';
+    bg.setAttribute('aria-hidden', 'true');
+    cta.insertBefore(bg, cta.firstChild);
+    var tape = q('.tape-strip');
+    PLAN[0][0] = bg;
+    var layer = document.createElement('div');
+    layer.className = 'build-layer';
+    layer.setAttribute('aria-hidden', 'true');
+    var items = PLAN.filter(function(p){ return p[0]; }).map(function(p){
+      var sel = document.createElement('div');
+      sel.className = 'build-sel ' + p[2];
+      sel.innerHTML = '<i></i><i></i><i></i><i></i><span class="build-size"></span>';
+      var cur = document.createElement('span');
+      cur.className = 'build-cur ' + p[2];
+      cur.innerHTML = ARROW + '<b>' + p[1] + '</b>';
+      layer.appendChild(sel); layer.appendChild(cur);
+      return { el: p[0], a: p[3], b: p[4], sel: sel, size: sel.querySelector('.build-size'), cur: cur, x: 0, y: 0, w: 0, h: 0, extra: p[0] === bg ? tape : null };
     });
-    if (btn){
-      btn.addEventListener('pointerenter', function(e){ if (mode !== 'off' && e.pointerType === 'mouse'){ measure(); mode = 'button'; layer.classList.add('meet'); kick(); } });
-      btn.addEventListener('pointerleave', function(){ if (mode === 'button'){ mode = 'follow'; layer.classList.remove('meet'); kick(); } });
-    }
-    // Beim Scrollen oder Größe ändern verschiebt sich der Block: neu messen
-    window.addEventListener('scroll', function(){ if (mode !== 'off'){ measure(); kick(); } }, {passive: true});
-    window.addEventListener('resize', function(){ if (mode !== 'off') measure(); });
+    cta.appendChild(layer);
+    cta.classList.add('build');
+
+    var clamp = function(v){ return v < 0 ? 0 : (v > 1 ? 1 : v); };
+    var seg = function(t, a, b){ return clamp((t - a) / (b - a)); };
+    var ease = function(x){ return x < .5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; };
+    var clip = function(el, v){ el.style.clipPath = v; el.style.webkitClipPath = v; };
+    var start = 0, end = 1, best = 0, done = false, ticking = false;
+
+    var measure = function(){
+      var r = cta.getBoundingClientRect(), vh = window.innerHeight || 800;
+      items.forEach(function(it){
+        var e = it.el.getBoundingClientRect();
+        it.x = e.left - r.left; it.y = e.top - r.top; it.w = e.width; it.h = e.height;
+      });
+      // Gebaut wird, während der Block von unten ins Bild kommt. Spätestens am Seitenende ist alles fertig.
+      var top = r.top + window.scrollY, max = Math.max(0, root.scrollHeight - vh);
+      start = top - vh * .82;
+      end = Math.min(start + vh * .62, max);
+      if (end - start < 160) start = end - 160;
+    };
+
+    var render = function(p){
+      items.forEach(function(it){
+        var t = clamp((p - it.a) / (it.b - it.a));
+        var come = seg(t, 0, .22), drag = ease(seg(t, .22, .86)), go = seg(t, .86, 1);
+        var targets = it.extra ? [it.el, it.extra] : [it.el];
+        var v = drag >= 1 ? '' : 'inset(0 ' + ((1 - drag) * 100).toFixed(2) + '% ' + ((1 - drag) * 100).toFixed(2) + '% 0)';
+        targets.forEach(function(el){ clip(el, v); });
+        // Auswahlrahmen wie im Design-Programm, mit Maßangabe beim Aufziehen
+        var w = it.w * drag, h = it.h * drag;
+        it.sel.style.opacity = t > .22 && t < 1 ? '1' : (t >= 1 ? (1 - seg(p, it.b, it.b + .08)).toFixed(3) : '0');
+        it.sel.style.transform = 'translate3d(' + it.x.toFixed(1) + 'px,' + it.y.toFixed(1) + 'px,0)';
+        it.sel.style.width = w.toFixed(1) + 'px';
+        it.sel.style.height = h.toFixed(1) + 'px';
+        it.size.textContent = Math.round(w) + ' × ' + Math.round(h);
+        it.size.style.opacity = drag > .1 && drag < 1 ? '1' : '0';
+        // Cursor: kommt zur linken oberen Ecke, zieht nach rechts unten, lässt los und geht
+        var cx, cy;
+        if (come < 1){ cx = it.x - 90 * (1 - come); cy = it.y - 60 * (1 - come); }
+        else { cx = it.x + w + 26 * go; cy = it.y + h + 18 * go; }
+        it.cur.style.opacity = t <= 0 || t >= 1 ? '0' : Math.min(seg(t, 0, .1), 1 - go).toFixed(3);
+        it.cur.style.transform = 'translate3d(' + cx.toFixed(1) + 'px,' + cy.toFixed(1) + 'px,0)';
+      });
+    };
+
+    var update = function(){
+      ticking = false;
+      if (done) return;
+      var p = clamp((window.scrollY - start) / (end - start));
+      if (p <= best && best > 0) return;
+      best = p;
+      render(p);
+      if (p >= 1){ finish(); }
+    };
+    // Fertig: alles sichtbar, Ebenen weg, nichts rechnet mehr
+    var finish = function(){
+      done = true;
+      render(1);
+      layer.style.opacity = '0';
+      setTimeout(function(){ if (layer.parentNode) layer.parentNode.removeChild(layer); }, 500);
+      window.removeEventListener('scroll', onScroll);
+    };
+    var onScroll = function(){ if (!ticking){ ticking = true; requestAnimationFrame(update); } };
+
+    measure();
+    render(0);
+    update();
+    window.addEventListener('scroll', onScroll, {passive: true});
+    window.addEventListener('resize', function(){ if (!done){ measure(); render(best); update(); } });
+    window.addEventListener('load', function(){ if (!done){ measure(); update(); } });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function(){ if (!done){ measure(); update(); } });
+    // Mit der Tastatur in den Block gesprungen: sofort alles zeigen, damit der Fokus sichtbar ist
+    cta.addEventListener('focusin', function(){ if (!done) finish(); });
+    window.addEventListener('beforeprint', function(){ if (!done) finish(); });
   })();
 
   /* ---------- Links ----------
