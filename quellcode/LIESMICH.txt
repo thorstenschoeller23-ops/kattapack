@@ -1,0 +1,39 @@
+KattaPack Website: Quellcode
+============================
+
+Diese Dateien erzeugen alle Seiten im Ordner "website".
+Zum Hochladen der Website brauchst du sie nicht.
+
+Inhalt
+------
+build.py    Alle Texte und der Aufbau der Seiten
+site.css    Design (Farben, Schriften, Abstände)
+site.js     Funktionen: Menü, Paket-Animation, Leiste „Auf dieser Seite“,
+            Stellplatz-Rechner, Anfrageformular
+fonts/      Schriften Archivo und IBM Plex Mono (SIL Open Font License)
+assets/     Logo als Vektorgrafik (logo-mark.svg: Katta mit Paket,
+            logo-word.svg: Schriftzug, logo-tag.svg: Unterzeile,
+            kattapack-logo.svg: komplettes Logo) und die Symbole
+            für Browser-Tab und Handy-Startbildschirm
+
+Neu bauen
+---------
+Nötig ist Python 3, sonst nichts.
+
+    python3 build.py ausgabe
+
+Das legt die fertige Website im Ordner "ausgabe" an.
+Danach den Inhalt von "ausgabe" hochladen.
+
+E-Mail-Adresse ändern
+---------------------
+Die Adresse steht an zwei Stellen:
+  build.py   Zeile mit EMAIL = "info@kattapack.de"
+  site.js    Zeile mit var EMAIL = 'info@kattapack.de';
+Beide ändern, dann neu bauen.
+
+Logo austauschen
+----------------
+Die drei Dateien logo-mark.svg, logo-word.svg und logo-tag.svg in assets/
+durch neue Fassungen ersetzen (Schwarz bitte als #171614 anlegen, daraus
+wird auf der Website die Textfarbe). Danach neu bauen.
