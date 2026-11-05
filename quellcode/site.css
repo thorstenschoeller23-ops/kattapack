@@ -446,6 +446,12 @@ body::before{
 @keyframes nudge{0%,100%{translate:0 -2px}50%{translate:0 3px}}
 .intro + .section{padding-top:clamp(40px,5vw,72px)}
 .intro.anim + .section{position:relative;z-index:1;margin-top:calc(-1 * var(--stage-h));background:var(--bg);box-shadow:0 -26px 50px -26px rgba(0,0,0,.42)}
+/* Alles nach dem Paket liegt darüber und ist deckend. Wichtig auf hohen Bildschirmen (iPad hochkant):
+   Dort ist der nächste Abschnitt kürzer als die Bühne. Ohne diese Regeln ragt das offene Paket unter ihm
+   hervor, verdeckt mit der unteren Lasche den folgenden Text und schaut weiter unten durch. */
+.intro.anim{z-index:0}
+.intro.anim ~ *{position:relative;z-index:1}
+:where(.intro.anim ~ *){background-color:var(--bg)}
 
 /* Variante 1: Der Browser rechnet die Bewegung selbst aus der Scrollposition (flüssig, auch am Handy).
    Strecken als Anteil von --open. --p0 ist die Scrollposition, ab der die Bühne stehen bleibt
